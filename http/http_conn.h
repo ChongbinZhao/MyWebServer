@@ -26,7 +26,7 @@
 #include "../timer/lst_timer.h"
 #include "../log/log.h"
 
-//阿三
+
 class http_conn
 {
 public:
@@ -177,7 +177,7 @@ private:
 
     //读取服务器上的文件地址
     char *m_file_address;
-
+    
     struct stat m_file_stat;
 
     struct iovec m_iv[2];
