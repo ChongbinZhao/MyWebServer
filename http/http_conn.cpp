@@ -613,6 +613,7 @@ void http_conn::unmap()
 {
     if (m_file_address)
     {
+        //munmap解除内存映射
         munmap(m_file_address, m_file_stat.st_size);
         m_file_address = 0;
     }
@@ -649,32 +650,42 @@ bool http_conn::write()
                 modfd(m_epollfd, m_sockfd, EPOLLOUT, m_TRIGMode);
                 return true;
             }
-            //如果发送失败，但不是缓冲区问题，取消映射
+            //如果发送失败，但不是缓冲区问题，则取消映射
             unmap();
             return false;
         }
 
+        //更新已发送字节数
         bytes_have_send += temp;
         bytes_to_send -= temp;
+
+        //第一个iovec头部信息的数据已发送完，发送第二个iovec数据
         if (bytes_have_send >= m_iv[0].iov_len)
         {
+            //不再继续发送头部信息
             m_iv[0].iov_len = 0;
+
+            //bytes_have_send - m_write_idx文件iovec[1]的指针偏移量，就是说可能发送了一部分文件，这已经发送的部分就是偏移量
             m_iv[1].iov_base = m_file_address + (bytes_have_send - m_write_idx);
             m_iv[1].iov_len = bytes_to_send;
         }
+        //第一个iovec头部信息的数据还没发完
         else
         {
             m_iv[0].iov_base = m_write_buf + bytes_have_send;
             m_iv[0].iov_len = m_iv[0].iov_len - bytes_have_send;
         }
 
+        //判断条件，数据已全部发送完
         if (bytes_to_send <= 0)
         {
             unmap();
             modfd(m_epollfd, m_sockfd, EPOLLIN, m_TRIGMode);
 
+            //如果浏览器的请求为长连接
             if (m_linger)
             {
+                //重新初始化http对象
                 init();
                 return true;
             }
