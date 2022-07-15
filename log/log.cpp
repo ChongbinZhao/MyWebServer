@@ -19,16 +19,16 @@ Log::~Log()
         fclose(m_fp);
     }
 }
-//å¼‚æ­¥éœ€è¦è®¾ç½®é˜»å¡é˜Ÿåˆ—çš„é•¿åº¦ï¼ŒåŒæ­¥ä¸éœ€è¦è®¾ç½®
+//Òì²½ĞèÒªÉèÖÃ×èÈû¶ÓÁĞµÄ³¤¶È£¬Í¬²½²»ĞèÒªÉèÖÃ
 bool Log::init(const char *file_name, int close_log, int log_buf_size, int split_lines, int max_queue_size)
 {
-    //å¦‚æœè®¾ç½®äº†max_queue_size,åˆ™è®¾ç½®ä¸ºå¼‚æ­¥
+    //Èç¹ûÉèÖÃÁËmax_queue_size,ÔòÉèÖÃÎªÒì²½
     if (max_queue_size >= 1)
     {
         m_is_async = true;
         m_log_queue = new block_queue<string>(max_queue_size);
         pthread_t tid;
-        //flush_log_threadä¸ºå›è°ƒå‡½æ•°,è¿™é‡Œè¡¨ç¤ºåˆ›å»ºçº¿ç¨‹å¼‚æ­¥å†™æ—¥å¿—
+        //flush_log_threadÎª»Øµ÷º¯Êı,ÕâÀï±íÊ¾´´½¨Ïß³ÌÒì²½Ğ´ÈÕÖ¾
         pthread_create(&tid, NULL, flush_log_thread, NULL);
     }
     
@@ -94,7 +94,7 @@ void Log::write_log(int level, const char *format, ...)
         strcpy(s, "[info]:");
         break;
     }
-    //å†™å…¥ä¸€ä¸ªlogï¼Œå¯¹m_count++, m_split_linesæœ€å¤§è¡Œæ•°
+    //Ğ´ÈëÒ»¸ölog£¬¶Ôm_count++, m_split_lines×î´óĞĞÊı
     m_mutex.lock();
     m_count++;
 
@@ -129,7 +129,7 @@ void Log::write_log(int level, const char *format, ...)
     string log_str;
     m_mutex.lock();
 
-    //å†™å…¥çš„å…·ä½“æ—¶é—´å†…å®¹æ ¼å¼
+    //Ğ´ÈëµÄ¾ßÌåÊ±¼äÄÚÈİ¸ñÊ½
     int n = snprintf(m_buf, 48, "%d-%02d-%02d %02d:%02d:%02d.%06ld %s ",
                      my_tm.tm_year + 1900, my_tm.tm_mon + 1, my_tm.tm_mday,
                      my_tm.tm_hour, my_tm.tm_min, my_tm.tm_sec, now.tv_usec, s);
@@ -158,7 +158,7 @@ void Log::write_log(int level, const char *format, ...)
 void Log::flush(void)
 {
     m_mutex.lock();
-    //å¼ºåˆ¶åˆ·æ–°å†™å…¥æµç¼“å†²åŒº
+    //Ç¿ÖÆË¢ĞÂĞ´ÈëÁ÷»º³åÇø
     fflush(m_fp);
     m_mutex.unlock();
 }

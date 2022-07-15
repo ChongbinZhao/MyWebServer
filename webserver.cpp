@@ -13,7 +13,7 @@ WebServer::WebServer()
     strcpy(m_root, server_path);
     strcat(m_root, root);
 
-    //定时器
+    //资源连接数组
     users_timer = new client_data[MAX_FD];
 }
 
@@ -146,15 +146,22 @@ void WebServer::eventListen()
     utils.addfd(m_epollfd, m_listenfd, false, m_LISTENTrigmode);
     http_conn::m_epollfd = m_epollfd;
 
+    //创建管道套接字
     ret = socketpair(PF_UNIX, SOCK_STREAM, 0, m_pipefd);
     assert(ret != -1);
+
+    //设置写端为非阻塞：如果缓冲区满了，则会阻塞，这时候会进一步增加信号处理函数的执行时间，为此，将其修改为非阻塞
     utils.setnonblocking(m_pipefd[1]);
+
+    //设置管道读端为ET非阻塞
     utils.addfd(m_epollfd, m_pipefd[0], false, 0);
 
-    utils.addsig(SIGPIPE, SIG_IGN);
-    utils.addsig(SIGALRM, utils.sig_handler, false);
-    utils.addsig(SIGTERM, utils.sig_handler, false);
+    //传递给主循环的信号值，这里只关注SIGPIPE、SIGALRM和SIGTERM
+    utils.addsig(SIGPIPE, SIG_IGN);//向一个已单向close的client调用两次write就会触发SIGPIPE
+    utils.addsig(SIGALRM, utils.sig_handler, false);//每隔一段时间就发送SIGALRM
+    utils.addsig(SIGTERM, utils.sig_handler, false);//SIGTERM是程序终止信号
 
+    //每隔TIMESLOT时间触发SIGALRM信号
     alarm(TIMESLOT);
 
     //工具类,信号和描述符基础操作
@@ -179,7 +186,7 @@ void WebServer::timer(int connfd, struct sockaddr_in client_address)
     utils.m_timer_lst.add_timer(timer);
 }
 
-//若有数据传输，则将定时器往后延迟3个单位
+//若有数据传输，则将定时器的超时时间往后延迟3个单位
 //并对新的定时器在链表上的位置进行调整
 void WebServer::adjust_timer(util_timer *timer)
 {
@@ -247,11 +254,15 @@ bool WebServer::dealclinetdata()
     return true;
 }
 
+//主进程读取信号值
 bool WebServer::dealwithsignal(bool &timeout, bool &stop_server)
 {
     int ret = 0;
     int sig;
     char signals[1024];
+
+    //从管道读端读出信号值，成功返回字节数，失败返回-1
+    //正常情况下，这里的ret返回值总是1，只有14或15两个ASCII码对应的字符
     ret = recv(m_pipefd[0], signals, sizeof(signals), 0);
     if (ret == -1)
     {
@@ -262,9 +273,10 @@ bool WebServer::dealwithsignal(bool &timeout, bool &stop_server)
         return false;
     }
     else
-    {
+    {   
         for (int i = 0; i < ret; ++i)
-        {
+        {   
+            //信号本身是int类型，管道中转递的是ASCLL码表中整型数值对应的字符
             switch (signals[i])
             {
             case SIGALRM:
@@ -386,7 +398,7 @@ void WebServer::eventLoop()
     bool stop_server = false;
 
     while (!stop_server)
-    {
+    {   
         //epoll_wait等待所监控文件描述符上有事件的产生; events是内核事件表
         int number = epoll_wait(m_epollfd, events, MAX_EVENT_NUMBER, -1);
         if (number < 0 && errno != EINTR)

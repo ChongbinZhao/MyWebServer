@@ -24,8 +24,10 @@
 #include <time.h>
 #include "../log/log.h"
 
+//¶¨Ê±Æ÷
 class util_timer;
 
+//Á¬½Ó×ÊÔ´(º¬ÓĞ¶¨Ê±Æ÷)
 struct client_data
 {
     sockaddr_in address;
@@ -33,29 +35,47 @@ struct client_data
     util_timer *timer;
 };
 
+
+//¶¨Ê±Æ÷Àà
 class util_timer
 {
 public:
     util_timer() : prev(NULL), next(NULL) {}
 
 public:
+    //³¬Ê±Ê±¼ä
     time_t expire;
     
+    //»Øµ÷º¯Êı£¬ÓÃÀ´É¾³ı·Ç»î¶¯socketÉÏµÄ×¢²áÊÂ¼ş²¢¹Ø±Õ
     void (* cb_func)(client_data *);
+
+    //¶¨Ê±Æ÷£¨º¬ÓĞÁ¬½Ó×ÊÔ´£©
     client_data *user_data;
+
+    //Ç°ÏòºÍºó¼Ì¶¨Ê±Æ÷
     util_timer *prev;
     util_timer *next;
 };
 
+
+//¶¨Ê±Æ÷ÈİÆ÷Éè¼Æ:½«Ã¿¸öÁ¬½ÓµÄ¶¨Ê±Æ÷°´ÕÕ³¬Ê±Ê±¼äÉıĞòÅÅÁĞ;Ö´ĞĞ¶¨Ê±ÈÎÎñÊ±½«µ½ÆÚµÄ¶¨Ê±Æ÷´ÓÁ´±íÉ¾³ı
+//Ìí¼Ó¶¨Ê±Æ÷Ê±¼ä¸´ÔÓ¶ÈÎªO(n)£¬É¾³ı¶¨Ê±Æ÷Ê±¼ä¸´ÔÓ¶ÈÎªO(1)
 class sort_timer_lst
 {
 public:
     sort_timer_lst();
     ~sort_timer_lst();
 
+    //½«Ä¿±ê¶¨Ê±Æ÷°´ÉıĞòÌí¼Óµ½Á´±íÖĞ
     void add_timer(util_timer *timer);
+    
+    //µ÷Õû¶¨Ê±Æ÷ÔÚÁ´±íÖĞµÄÎ»ÖÃ
     void adjust_timer(util_timer *timer);
+    
+    //½«³¬Ê±µÄ¶¨Ê±Æ÷´ÓÁ´±íÖĞÉ¾³ı
     void del_timer(util_timer *timer);
+    
+    //¶¨Ê±ÈÎÎñ´¦Àíº¯Êı£¬SIGALRM´¥·¢Ê±¾Íµ÷ÓÃÕâ¸öº¯Êı
     void tick();
 
 private:
@@ -65,6 +85,7 @@ private:
     util_timer *tail;
 };
 
+
 class Utils
 {
 public:
@@ -73,19 +94,19 @@ public:
 
     void init(int timeslot);
 
-    //å¯¹æ–‡ä»¶æè¿°ç¬¦è®¾ç½®éé˜»å¡
+    //¶ÔÎÄ¼şÃèÊö·ûÉèÖÃ·Ç×èÈû
     int setnonblocking(int fd);
 
-    //å°†å†…æ ¸äº‹ä»¶è¡¨æ³¨å†Œè¯»äº‹ä»¶ï¼ŒETæ¨¡å¼ï¼Œé€‰æ‹©å¼€å¯EPOLLONESHOT
+    //½«ÄÚºËÊÂ¼ş±í×¢²á¶ÁÊÂ¼ş£¬ETÄ£Ê½£¬Ñ¡Ôñ¿ªÆôEPOLLONESHOT
     void addfd(int epollfd, int fd, bool one_shot, int TRIGMode);
 
-    //ä¿¡å·å¤„ç†å‡½æ•°
+    //ĞÅºÅ´¦Àíº¯Êı
     static void sig_handler(int sig);
 
-    //è®¾ç½®ä¿¡å·å‡½æ•°
+    //ÉèÖÃĞÅºÅº¯Êı
     void addsig(int sig, void(handler)(int), bool restart = true);
 
-    //å®šæ—¶å¤„ç†ä»»åŠ¡ï¼Œé‡æ–°å®šæ—¶ä»¥ä¸æ–­è§¦å‘SIGALRMä¿¡å·
+    //¶¨Ê±´¦ÀíÈÎÎñ£¬ÖØĞÂ¶¨Ê±ÒÔ²»¶Ï´¥·¢SIGALRMĞÅºÅ
     void timer_handler();
 
     void show_error(int connfd, const char *info);
@@ -96,6 +117,7 @@ public:
     static int u_epollfd;
     int m_TIMESLOT;
 };
+
 
 void cb_func(client_data *user_data);
 

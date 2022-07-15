@@ -1,11 +1,15 @@
 #include "lst_timer.h"
 #include "../http/http_conn.h"
 
+//½âÎöº¯Êı
 sort_timer_lst::sort_timer_lst()
 {
     head = NULL;
     tail = NULL;
 }
+
+
+//Îö¹¹º¯Êı
 sort_timer_lst::~sort_timer_lst()
 {
     util_timer *tmp = head;
@@ -17,6 +21,8 @@ sort_timer_lst::~sort_timer_lst()
     }
 }
 
+
+//Ìí¼Ó¶¨Ê±Æ÷ 
 void sort_timer_lst::add_timer(util_timer *timer)
 {
     if (!timer)
@@ -28,6 +34,8 @@ void sort_timer_lst::add_timer(util_timer *timer)
         head = tail = timer;
         return;
     }
+
+    //Èç¹ûtimerµÄ³¬Ê±Ê±¼ä±ÈheadµÄÊ±¼äĞ¡£¬½«timerºÍhead»¥»»
     if (timer->expire < head->expire)
     {
         timer->next = head;
@@ -35,8 +43,13 @@ void sort_timer_lst::add_timer(util_timer *timer)
         head = timer;
         return;
     }
+
+    //·ñÔòµ÷ÓÃË½ÓĞ³ÉÔ±£¨Ãû×ÖÒ²½Ğadd_timer²»¹ı²ÎÊı²»Í¬£©£¬µ÷ÕûÄÚ²¿½áµã
     add_timer(timer, head);
 }
+
+
+//µ÷Õû¶¨Ê±Æ÷Î»ÖÃ
 void sort_timer_lst::adjust_timer(util_timer *timer)
 {
     if (!timer)
@@ -44,10 +57,14 @@ void sort_timer_lst::adjust_timer(util_timer *timer)
         return;
     }
     util_timer *tmp = timer->next;
+
+    //±»µ÷ÕûµÄ¶¨Ê±Æ÷ÔÚÁ´±íÎ²²¿ || ³¬Ê±ÖµÈÔÈ»Ğ¡ÓÚÏÂÒ»¸ö¶¨Ê±Æ÷³¬Ê±Öµ£¬Ôò²»µ÷Õû
     if (!tmp || (timer->expire < tmp->expire))
     {
         return;
     }
+
+    //±»µ÷Õû¶¨Ê±Æ÷ÊÇÁ´±íÍ·½áµã£¬½«¶¨Ê±Æ÷È¡³ö£¬ÖØĞÂ²åÈë
     if (timer == head)
     {
         head = head->next;
@@ -55,6 +72,8 @@ void sort_timer_lst::adjust_timer(util_timer *timer)
         timer->next = NULL;
         add_timer(timer, head);
     }
+
+    //±»µ÷Õû¶¨Ê±Æ÷ÔÚÄÚ²¿£¬½«¶¨Ê±Æ÷È¡³ö£¬ÖØĞÂ²åÈë
     else
     {
         timer->prev->next = timer->next;
@@ -62,6 +81,9 @@ void sort_timer_lst::adjust_timer(util_timer *timer)
         add_timer(timer, timer->next);
     }
 }
+
+
+//É¾³ı¶¨Ê±Æ÷
 void sort_timer_lst::del_timer(util_timer *timer)
 {
     if (!timer)
@@ -93,6 +115,9 @@ void sort_timer_lst::del_timer(util_timer *timer)
     timer->next->prev = timer->prev;
     delete timer;
 }
+
+
+//¶¨Ê±ÈÎÎñ´¦Àíº¯Êı£¨ÓÉSIGALRMĞÅºÅÀ´Çı¶¯£©£¬´¦ÀíÁ´±íÖĞµ½ÆÚµÄ¶¨Ê±Æ÷
 void sort_timer_lst::tick()
 {
     if (!head)
@@ -100,15 +125,26 @@ void sort_timer_lst::tick()
         return;
     }
     
+    //»ñÈ¡µ±Ç°Ê±¼ä
     time_t cur = time(NULL);
+
+    //¶¨Î»µ½Á´±íµÄÍ·½Úµã
     util_timer *tmp = head;
+
+    //±éÀú¶¨Ê±Æ÷Á´±í
     while (tmp)
     {
+        //Ò»¸öÒ²Ã»ÓĞµ½ÆÚ
         if (cur < tmp->expire)
         {
             break;
         }
+
+        //Èôµ±Ç°¶¨Ê±Æ÷µ½ÆÚ£¬Ôòµ÷ÓÃ»Øµ÷º¯Êı£¬Ö´ĞĞÏàÓ¦²Ù×÷
+        //É¾³ıepoll×¢²áÊÂ¼ş£»¹Ø±ÕÎÄ¼şÃèÊö·û£»Á¬½ÓÊı¼õ1
         tmp->cb_func(tmp->user_data);
+
+        //½«´¦ÀíºóµÄ¶¨Ê±Æ÷´ÓÁ´±íÈİÆ÷ÖĞÉ¾³ı£¬²¢ÖØÖÃÍ·½áµã
         head = tmp->next;
         if (head)
         {
@@ -119,6 +155,8 @@ void sort_timer_lst::tick()
     }
 }
 
+
+//timer³¬Ê±Ê±¼ä±Èhead´óµÄÇé¿öÏÂ£¬±éÀú²éÑ¯Ö±ÖÁtimer²åÈë
 void sort_timer_lst::add_timer(util_timer *timer, util_timer *lst_head)
 {
     util_timer *prev = lst_head;
@@ -145,12 +183,15 @@ void sort_timer_lst::add_timer(util_timer *timer, util_timer *lst_head)
     }
 }
 
+
+//³õÊ¼»¯:TIMESLOT = timeslot
 void Utils::init(int timeslot)
 {
     m_TIMESLOT = timeslot;
 }
 
-//å¯¹æ–‡ä»¶æè¿°ç¬¦è®¾ç½®éé˜»å¡
+
+//¶ÔÎÄ¼şÃèÊö·ûÉèÖÃ·Ç×èÈû
 int Utils::setnonblocking(int fd)
 {
     int old_option = fcntl(fd, F_GETFL);
@@ -159,7 +200,7 @@ int Utils::setnonblocking(int fd)
     return old_option;
 }
 
-//å°†å†…æ ¸äº‹ä»¶è¡¨æ³¨å†Œè¯»äº‹ä»¶ï¼ŒETæ¨¡å¼ï¼Œé€‰æ‹©å¼€å¯EPOLLONESHOT
+//½«ÄÚºËÊÂ¼ş±í×¢²á¶ÁÊÂ¼ş£¬ETÄ£Ê½£¬Ñ¡Ôñ¿ªÆôEPOLLONESHOT
 void Utils::addfd(int epollfd, int fd, bool one_shot, int TRIGMode)
 {
     epoll_event event;
@@ -176,34 +217,56 @@ void Utils::addfd(int epollfd, int fd, bool one_shot, int TRIGMode)
     setnonblocking(fd);
 }
 
-//ä¿¡å·å¤„ç†å‡½æ•°
+
+//ĞÅºÅ´¦Àíº¯Êı£º½«ĞÅºÅµÄ¾ßÌåÖµÍ¨¹ı¹ÜµÀ·¢ËÍ¸øÖ÷½ø³Ì
 void Utils::sig_handler(int sig)
 {
-    //ä¸ºä¿è¯å‡½æ•°çš„å¯é‡å…¥æ€§ï¼Œä¿ç•™åŸæ¥çš„errno
+    //Îª±£Ö¤º¯ÊıµÄ¿ÉÖØÈëĞÔ£¬±£ÁôÔ­À´µÄerrno£º±£»¤ÏÖ³¡
     int save_errno = errno;
+
+    //sigÊÇÏµÍ³²úÉúµÄĞÅºÅ
     int msg = sig;
+
+    //½«ĞÅºÅÖµ´Ó¹ÜµÀĞ´¶ËĞ´Èë£¬´«Êä×Ö·ûÀàĞÍ£¬¶ø·ÇÕûĞÍ
     send(u_pipefd[1], (char *)&msg, 1, 0);
+
+    //»¹Ô­ÏÖ³¡
     errno = save_errno;
 }
 
-//è®¾ç½®ä¿¡å·å‡½æ•°
+
+//ÉèÖÃĞÅºÅº¯Êı£¬ÏîÄ¿ÖĞ½ö¹Ø×¢SIGPIPE¡¢SIGTERMºÍSIGALRMÁ½¸öĞÅºÅ
 void Utils::addsig(int sig, void(handler)(int), bool restart)
 {
+    //´´½¨sigaction½á¹¹Ìå±äÁ¿
     struct sigaction sa;
     memset(&sa, '\0', sizeof(sa));
+
+    //ĞÅºÅ´¦Àíº¯ÊıÖĞ½ö½ö·¢ËÍĞÅºÅÖµ£¬²»×ö¶ÔÓ¦Âß¼­´¦Àí
     sa.sa_handler = handler;
+
+    //SA_RESTART£¬Ê¹±»ĞÅºÅ´ò¶ÏµÄÏµÍ³µ÷ÓÃ×Ô¶¯ÖØĞÂ·¢Æğ
     if (restart)
         sa.sa_flags |= SA_RESTART;
+
+    //ÓÃÀ´½«²ÎÊısetĞÅºÅ¼¯³õÊ¼»¯£¬È»ºó°ÑËùÓĞµÄĞÅºÅ¼ÓÈëµ½´ËĞÅºÅ¼¯Àï;sa_maskÖ¸ÒªÆÁ±ÎµÄĞÅºÅ
     sigfillset(&sa.sa_mask);
+    
+    //sigaction()·µ»ØÖµ0±íÊ¾³É¹¦£¬-1±íÊ¾ÓĞ´íÎó·¢Éú
     assert(sigaction(sig, &sa, NULL) != -1);
 }
 
-//å®šæ—¶å¤„ç†ä»»åŠ¡ï¼Œé‡æ–°å®šæ—¶ä»¥ä¸æ–­è§¦å‘SIGALRMä¿¡å·
+
+//¶¨Ê±´¦ÀíÈÎÎñ£¬ÖØĞÂ¶¨Ê±ÒÔ²»¶Ï´¥·¢SIGALRMĞÅºÅ
 void Utils::timer_handler()
 {
+    //¶¨Ê±ÈÎÎñ´¦Àíº¯Êı
     m_timer_lst.tick();
+
+    //ÉèÖÃĞÅºÅSIGALRMÔÚ¾­¹ı²ÎÊım_TIMESLOTÃëÊıºó·¢ËÍ¸øÄ¿Ç°µÄ½ø³Ì
     alarm(m_TIMESLOT);
 }
+
 
 void Utils::show_error(int connfd, const char *info)
 {
@@ -211,14 +274,21 @@ void Utils::show_error(int connfd, const char *info)
     close(connfd);
 }
 
+
 int *Utils::u_pipefd = 0;
 int Utils::u_epollfd = 0;
-
 class Utils;
+
+//¶¨Ê±Æ÷»Øµ÷º¯Êı
 void cb_func(client_data *user_data)
 {
+    //É¾³ı·Ç»î¶¯Á¬½ÓÔÚsocketÉÏµÄ×¢²áÊÂ¼ş
     epoll_ctl(Utils::u_epollfd, EPOLL_CTL_DEL, user_data->sockfd, 0);
     assert(user_data);
+
+    //¹Ø±ÕÎÄ¼şÃèÊö·û
     close(user_data->sockfd);
+
+    //Á¬½ÓÊı¼õ1
     http_conn::m_user_count--;
 }
