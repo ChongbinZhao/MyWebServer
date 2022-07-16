@@ -231,7 +231,7 @@ bool http_conn::read_once()
         bytes_read = recv(m_sockfd, m_read_buf + m_read_idx, READ_BUFFER_SIZE - m_read_idx, 0);
         //读完后缓冲区bytes_read个字节被占用，指针跳转
         m_read_idx += bytes_read;
-
+        
         if (bytes_read <= 0)
         {
             return false;

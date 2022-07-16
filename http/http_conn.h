@@ -102,6 +102,7 @@ public:
 
 
 private:
+    //初始化新创建的连接
     void init();
     //从m_read_buf读取，并处理请求报文
     HTTP_CODE process_read();

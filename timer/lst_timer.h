@@ -79,6 +79,8 @@ public:
     void tick();
 
 private:
+    //私有成员，被公有成员add_timer和adjust_time调用
+    //主要用于调整链表内部结点
     void add_timer(util_timer *timer, util_timer *lst_head);
 
     util_timer *head;
@@ -113,7 +115,7 @@ public:
 
 public:
     static int *u_pipefd;
-    sort_timer_lst m_timer_lst;
+    sort_timer_lst m_timer_lst;//定时器列表
     static int u_epollfd;
     int m_TIMESLOT;
 };
