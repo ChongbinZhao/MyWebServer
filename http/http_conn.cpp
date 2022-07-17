@@ -17,10 +17,13 @@ locker m_lock;
 map<string, string> users;
 
 
+//载入数据库表，并将用户名和密码存入map中
 void http_conn::initmysql_result(connection_pool *connPool)
 {
     //先从连接池中取一个连接
     MYSQL *mysql = NULL;
+
+    //从连接池中取出一个空闲连接并赋给mysql，连接池connPool交由connectionRAII类内的poolRAII接管
     connectionRAII mysqlcon(&mysql, connPool);
 
     //在user表中检索username，passwd数据，浏览器端输入
@@ -487,22 +490,25 @@ http_conn::HTTP_CODE http_conn::do_request()
         free(m_url_real);
 
         //将用户名和密码提取出来
-        //user=123&passwd=123
+        //n_string内容：user=123&passwd=123
         char name[100], password[100];
+
+        //提取用户名 
         int i;
         for (i = 5; m_string[i] != '&'; ++i)
             name[i - 5] = m_string[i];
         name[i - 5] = '\0';
 
+        //提取密码
         int j = 0;
         for (i = i + 10; m_string[i] != '\0'; ++i, ++j)
             password[j] = m_string[i];
         password[j] = '\0';
 
+        //注册
         if (*(p + 1) == '3')
-        {
-            //如果是注册，先检测数据库中是否有重名的
-            //没有重名的，进行增加数据
+        {   
+            //创建sql查询语句，若没有重名的，就进行增加数据
             char *sql_insert = (char *)malloc(sizeof(char) * 200);
             strcpy(sql_insert, "INSERT INTO user(username, passwd) VALUES(");
             strcat(sql_insert, "'");
@@ -511,28 +517,31 @@ http_conn::HTTP_CODE http_conn::do_request()
             strcat(sql_insert, password);
             strcat(sql_insert, "')");
 
+            //假如用户名没有重复
             if (users.find(name) == users.end())
             {
                 m_lock.lock();
                 int res = mysql_query(mysql, sql_insert);
+                //插入一条记录（用户名和密码）
                 users.insert(pair<string, string>(name, password));
                 m_lock.unlock();
 
-                if (!res)
+                if (!res)//注册成功
                     strcpy(m_url, "/log.html");
-                else
+                else//注册失败
                     strcpy(m_url, "/registerError.html");
             }
+            //用户名重复了就注册失败
             else
                 strcpy(m_url, "/registerError.html");
         }
-        //如果是登录，直接判断
-        //若浏览器端输入的用户名和密码在表中可以查找到，返回1，否则返回0
+
+        //登录，若浏览器端输入的用户名和密码在表中可以查找到，返回1，否则返回0
         else if (*(p + 1) == '2')
         {
             if (users.find(name) != users.end() && users[name] == password)
                 strcpy(m_url, "/welcome.html");
-            else
+            else0
                 strcpy(m_url, "/logError.html");
         }
     }
@@ -578,9 +587,7 @@ http_conn::HTTP_CODE http_conn::do_request()
         strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
         free(m_url_real);
     }
-    //如果以上均不符合，即不是登录和注册，直接将url与网站目录拼接
-    //这里的情况是welcome界面，请求服务器上的一个图片
-    //这一句不太懂？？？
+    //否则发送url实际请求的文件
     else
         strncpy(m_real_file + len, m_url, FILENAME_LEN - len - 1);
 

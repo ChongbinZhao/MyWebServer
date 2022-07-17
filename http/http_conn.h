@@ -91,12 +91,13 @@ public:
     bool read_once();
     //响应报文写入函数
     bool write();
+    //同步线程初始化数据库读取表
+    void initmysql_result(connection_pool *connPool);
+
     sockaddr_in *get_address()
     {
         return &m_address;
     }
-    //同步线程初始化数据库读取表
-    void initmysql_result(connection_pool *connPool);
     int timer_flag;
     int improv;
 
@@ -195,7 +196,9 @@ private:
     
     char *doc_root;
 
+    //将数据库的用户名和密码载入到服务器中的map
     map<string, string> m_users;
+
     int m_TRIGMode;
     int m_close_log;
 

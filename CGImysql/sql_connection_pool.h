@@ -13,6 +13,7 @@
 
 using namespace std;
 
+//数据库连接池
 class connection_pool
 {
 public:
