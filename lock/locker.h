@@ -24,10 +24,12 @@ public:
     }
     ~sem()
     {
+        //V操作释放资源，释放成功后资源数加1
         sem_destroy(&m_sem);
     }
     bool wait()
     {
+        //P操作申请资源，申请成功后资源数减1，申请不成功则阻塞等待
         return sem_wait(&m_sem) == 0;
     }
     bool post()
@@ -38,6 +40,8 @@ public:
 private:
     sem_t m_sem;
 };
+
+
 class locker
 {
 public:
@@ -68,6 +72,8 @@ public:
 private:
     pthread_mutex_t m_mutex;
 };
+
+
 class cond
 {
 public:

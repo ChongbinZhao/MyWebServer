@@ -12,26 +12,26 @@ template <typename T>
 class threadpool
 {
 public:
-    /*thread_numberæ˜¯çº¿ç¨‹æ± ä¸­çº¿ç¨‹çš„æ•°é‡ï¼Œmax_requestsæ˜¯è¯·æ±‚é˜Ÿåˆ—ä¸­æœ€å¤šå…è®¸çš„ã€ç­‰å¾…å¤„ç†çš„è¯·æ±‚çš„æ•°é‡*/
+    /*thread_numberÊÇÏß³Ì³ØÖĞÏß³ÌµÄÊıÁ¿£¬max_requestsÊÇÇëÇó¶ÓÁĞÖĞ×î¶àÔÊĞíµÄ¡¢µÈ´ı´¦ÀíµÄÇëÇóµÄÊıÁ¿*/
     threadpool(int actor_model, connection_pool *connPool, int thread_number = 8, int max_request = 10000);
     ~threadpool();
     bool append(T *request, int state);
     bool append_p(T *request);
 
 private:
-    /*å·¥ä½œçº¿ç¨‹è¿è¡Œçš„å‡½æ•°ï¼Œå®ƒä¸æ–­ä»å·¥ä½œé˜Ÿåˆ—ä¸­å–å‡ºä»»åŠ¡å¹¶æ‰§è¡Œä¹‹*/
+    /*¹¤×÷Ïß³ÌÔËĞĞµÄº¯Êı£¬Ëü²»¶Ï´Ó¹¤×÷¶ÓÁĞÖĞÈ¡³öÈÎÎñ²¢Ö´ĞĞÖ®*/
     static void *worker(void *arg);
     void run();
 
 private:
-    int m_thread_number;        //çº¿ç¨‹æ± ä¸­çš„çº¿ç¨‹æ•°
-    int m_max_requests;         //è¯·æ±‚é˜Ÿåˆ—ä¸­å…è®¸çš„æœ€å¤§è¯·æ±‚æ•°
-    pthread_t *m_threads;       //æè¿°çº¿ç¨‹æ± çš„æ•°ç»„ï¼Œå…¶å¤§å°ä¸ºm_thread_number
-    std::list<T *> m_workqueue; //è¯·æ±‚é˜Ÿåˆ—
-    locker m_queuelocker;       //ä¿æŠ¤è¯·æ±‚é˜Ÿåˆ—çš„äº’æ–¥é”
-    sem m_queuestat;            //æ˜¯å¦æœ‰ä»»åŠ¡éœ€è¦å¤„ç†
-    connection_pool *m_connPool;  //æ•°æ®åº“
-    int m_actor_model;          //æ¨¡å‹åˆ‡æ¢
+    int m_thread_number;        //Ïß³Ì³ØÖĞµÄÏß³ÌÊı
+    int m_max_requests;         //ÇëÇó¶ÓÁĞÖĞÔÊĞíµÄ×î´óÇëÇóÊı
+    pthread_t *m_threads;       //ÃèÊöÏß³Ì³ØµÄÊı×é£¬Æä´óĞ¡Îªm_thread_number
+    std::list<T *> m_workqueue; //ÇëÇó¶ÓÁĞ
+    locker m_queuelocker;       //±£»¤ÇëÇó¶ÓÁĞµÄ»¥³âËø
+    sem m_queuestat;            //ÊÇ·ñÓĞÈÎÎñĞèÒª´¦Àí
+    connection_pool *m_connPool;  //Êı¾İ¿â
+    int m_actor_model;          //Ä£ĞÍÇĞ»»
 };
 template <typename T>
 threadpool<T>::threadpool( int actor_model, connection_pool *connPool, int thread_number, int max_requests) : m_actor_model(actor_model),m_thread_number(thread_number), m_max_requests(max_requests), m_threads(NULL),m_connPool(connPool)
@@ -48,7 +48,7 @@ threadpool<T>::threadpool( int actor_model, connection_pool *connPool, int threa
             delete[] m_threads;
             throw std::exception();
         }
-        //pthread_detachä½¿çº¿ç¨‹å˜æˆunjoinableçŠ¶æ€ï¼Œç­‰çº¿ç¨‹ç»“æŸæ—¶å°±ä¼šè‡ªåŠ¨é‡Šæ”¾èµ„æº
+        //pthread_detachÊ¹Ïß³Ì±ä³Éunjoinable×´Ì¬£¬µÈÏß³Ì½áÊøÊ±¾Í»á×Ô¶¯ÊÍ·Å×ÊÔ´
         if (pthread_detach(m_threads[i]))
         {
             delete[] m_threads;

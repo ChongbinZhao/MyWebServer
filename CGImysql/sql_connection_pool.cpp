@@ -10,21 +10,26 @@
 
 using namespace std;
 
+//¹¹Ôìº¯Êı
 connection_pool::connection_pool()
 {
 	m_CurConn = 0;
 	m_FreeConn = 0;
 }
 
+
+//µ¥ÀıÀÁººÄ£Ê½·µ»ØÁ¬½Ó³ØÊµÀı
 connection_pool *connection_pool::GetInstance()
 {
 	static connection_pool connPool;
 	return &connPool;
 }
 
-//æ„é€ åˆå§‹åŒ–
+
+//¹¹Ôì³õÊ¼»¯
 void connection_pool::init(string url, string User, string PassWord, string DBName, int Port, int MaxConn, int close_log)
 {
+	//³õÊ¼»¯Êı¾İ¿âĞÅÏ¢
 	m_url = url;
 	m_Port = Port;
 	m_User = User;
@@ -32,6 +37,7 @@ void connection_pool::init(string url, string User, string PassWord, string DBNa
 	m_DatabaseName = DBName;
 	m_close_log = close_log;
 
+	//´´½¨MaxConnÌõÊı¾İ¿âÁ¬½Ó
 	for (int i = 0; i < MaxConn; i++)
 	{
 		MYSQL *con = NULL;
@@ -42,6 +48,8 @@ void connection_pool::init(string url, string User, string PassWord, string DBNa
 			LOG_ERROR("MySQL Error");
 			exit(1);
 		}
+
+		//´´½¨Ò»ÌõÊı¾İ¿âÁ¬½Ó
 		con = mysql_real_connect(con, url.c_str(), User.c_str(), PassWord.c_str(), DBName.c_str(), Port, NULL, 0);
 
 		if (con == NULL)
@@ -53,35 +61,40 @@ void connection_pool::init(string url, string User, string PassWord, string DBNa
 		++m_FreeConn;
 	}
 
+	//½«ĞÅºÅÁ¿³õÊ¼»¯Îª×î´óÁ¬½Ó´ÎÊı£¬semÊÇlocker.hÀïµÄĞÅºÅÁ¿Àà
 	reserve = sem(m_FreeConn);
 
 	m_MaxConn = m_FreeConn;
 }
 
 
-//å½“æœ‰è¯·æ±‚æ—¶ï¼Œä»æ•°æ®åº“è¿æ¥æ± ä¸­è¿”å›ä¸€ä¸ªå¯ç”¨è¿æ¥ï¼Œæ›´æ–°ä½¿ç”¨å’Œç©ºé—²è¿æ¥æ•°
+//µ±ÓĞÇëÇóÊ±£¬´ÓÊı¾İ¿âÁ¬½Ó³ØÖĞ·µ»ØÒ»¸ö¿ÉÓÃÁ¬½Ó£¬¸üĞÂÊ¹ÓÃºÍ¿ÕÏĞÁ¬½ÓÊı
 MYSQL *connection_pool::GetConnection()
 {
 	MYSQL *con = NULL;
 
-	if (0 == connList.size())
-		return NULL;
+	if (0 == connList.size()) return NULL;
 
+	//È¡³öÁ¬½Ó£¬ĞÅºÅÁ¿Ô­×Ó¼õ1£¬Îª0ÔòµÈ´ı
 	reserve.wait();
 	
+	//¶ÔÁ¬½Ó³Ø½øĞĞ²Ù×÷Ç°ÏÈÉÏËø
 	lock.lock();
 
 	con = connList.front();
 	connList.pop_front();
 
+	//ÕâÁ½¸ö±äÁ¿²¢Ã»ÓĞÓÃµ½£¬½öÊÇ¼ÇÂ¼Á¬½Ó³Øµ±Ç°×´Ì¬
 	--m_FreeConn;
 	++m_CurConn;
 
+	//Á¬½Ó³Ø²Ù×÷Íê±Ï£¬½âËø
 	lock.unlock();
 	return con;
 }
 
-//é‡Šæ”¾å½“å‰ä½¿ç”¨çš„è¿æ¥
+
+//ÊÍ·Åµ±Ç°Ê¹ÓÃµÄÁ¬½Ó
 bool connection_pool::ReleaseConnection(MYSQL *con)
 {
 	if (NULL == con)
@@ -99,7 +112,8 @@ bool connection_pool::ReleaseConnection(MYSQL *con)
 	return true;
 }
 
-//é”€æ¯æ•°æ®åº“è¿æ¥æ± 
+
+//Ïú»ÙÊı¾İ¿âÁ¬½Ó³Ø£¬Ê¹ÓÃmysql_close()Öğ¸ö¹Ø±ÕmysqlÁ¬½Ó
 void connection_pool::DestroyPool()
 {
 
@@ -120,24 +134,36 @@ void connection_pool::DestroyPool()
 	lock.unlock();
 }
 
-//å½“å‰ç©ºé—²çš„è¿æ¥æ•°
+
+//µ±Ç°¿ÕÏĞµÄÁ¬½ÓÊı
 int connection_pool::GetFreeConn()
 {
 	return this->m_FreeConn;
 }
 
+
+//RAII»úÖÆµ÷ÓÃDestroyPool()Ïú»ÙÁ¬½Ó³Ø£ºÔÚ¹¹Ôìº¯ÊıÖĞÉêÇë·ÖÅä×ÊÔ´£¬ÔÚÎö¹¹º¯ÊıÖĞÊÍ·Å×ÊÔ´
 connection_pool::~connection_pool()
 {
 	DestroyPool();
 }
 
+
+//ÉÏÊöËùÓĞconnection_poolÀà³ÉÔ±º¯Êı¶¼±»·â×°ÔÚconnectionRAIIÀàÀïÃæÁË
 connectionRAII::connectionRAII(MYSQL **SQL, connection_pool *connPool){
-	*SQL = connPool->GetConnection();
 	
+	//È¡³öÒ»¸ö¿ÉÓÃmysqlÁ¬½Ó
+	*SQL = connPool->GetConnection();
+
+	//½«È¡³öµÄmysqlÁ¬½Ó·ÅÈëconRAII¹©Íâ½çµ÷ÓÃ
 	conRAII = *SQL;
+
+	//Êı¾İ¿âÁ¬½Ó³Ø
 	poolRAII = connPool;
 }
 
+
+//connectionRAIIÎö¹¹º¯Êı
 connectionRAII::~connectionRAII(){
 	poolRAII->ReleaseConnection(conRAII);
 }
