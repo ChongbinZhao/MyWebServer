@@ -98,8 +98,10 @@ public:
     {
         return &m_address;
     }
-    int timer_flag;
+    //reactor模式中用于通知主进程是否进行了读写操作（不管有没有成功），是就置为1
     int improv;
+    //reactor模式中当读写失败时就为1
+    int timer_flag;
 
 
 private:

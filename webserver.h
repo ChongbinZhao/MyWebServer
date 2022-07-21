@@ -87,9 +87,8 @@ public:
     int m_CONNTrigmode;
 
     //client_data是一个定时器类，里面包含定时器以及socket相关的东西
-    client_data *users_timer;
-
     //Utils类管理所有定时器，里面包含了定时器列表、epoll描述符以及时间阈值等
+    client_data *users_timer;
     Utils utils;
 };
 #endif

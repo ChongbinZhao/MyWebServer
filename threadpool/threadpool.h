@@ -8,7 +8,7 @@
 #include "../lock/locker.h"
 #include "../CGImysql/sql_connection_pool.h"
 
-//项目中的T是http_conn类
+//项目中的T是http_conn类，当作一个客户连接来处理
 template <typename T>
 class threadpool
 {
@@ -28,7 +28,7 @@ private:
     int m_thread_number;        //线程池中的线程数，这个需要根据硬件来设置
     int m_max_requests;         //请求队列中允许的最大请求数
     pthread_t *m_threads;       //描述线程池的数组，其大小为m_thread_number
-    std::list<T *> m_workqueue; //请求队列
+    std::list<T *> m_workqueue; //请求队列，存放客户端连接
     locker m_queuelocker;       //保护请求队列的互斥锁
     sem m_queuestat;            //sem是信号量，用来判断是否有任务需要处理
     connection_pool *m_connPool;//数据库连接池
@@ -77,7 +77,7 @@ bool threadpool<T>::append(T *request, int state)
         m_queuelocker.unlock();
         return false;
     }
-    request->m_state = state;//请求报文的状态码
+    request->m_state = state;//操作状态：读为0, 写为1
     m_workqueue.push_back(request);
     m_queuelocker.unlock();
     m_queuestat.post();
@@ -103,7 +103,7 @@ bool threadpool<T>::append_p(T *request)
 
 template <typename T>
 void *threadpool<T>::worker(void *arg)
-{
+{   
     threadpool *pool = (threadpool *)arg;
     pool->run();
     return pool;
@@ -121,14 +121,14 @@ void threadpool<T>::run()
         //被唤醒后先上锁
         m_queuelocker.lock();
 
-        //如果请求队列为空，解锁后继续等待，直到请求队列有元素
+        //如果请求连接队列为空，解锁后继续等待，直到请求队列有元素
         if (m_workqueue.empty())
         {
             m_queuelocker.unlock();
             continue;
         }
 
-        //从请求队列中获取一个http_conn对象，然后队列出栈，解锁
+        //从请求队列中获取一个http_conn客户端连接，然后出队列，解锁
         T *request = m_workqueue.front();
         m_workqueue.pop_front();
         m_queuelocker.unlock();
@@ -138,11 +138,12 @@ void threadpool<T>::run()
 
         //这是reactor模式
         //当进行了read_once()或write()操作之后，不管读写是否成功，improv都会被置为1
-        //当read_once()或write()任一个操作失败后，timer_flag就会置为1，然后删除对应的定时器（在dealwithwrite和dealwithread里有体现）
+        //当read_once()或write()任一个操作失败后，timer_flag就会置为1，然后删除对应的定时器（删除后置0在dealwithwrite和dealwithread里有体现）
         if (1 == m_actor_model)
         {
             if (0 == request->m_state)
             {
+                //read_once()接收请求报文，之后的process()就是对报文进行解析了
                 if (request->read_once())
                 {
                     request->improv = 1;
@@ -169,7 +170,7 @@ void threadpool<T>::run()
             }
         }
 
-        //这是proactor模式
+        //这是proactor模式，默认请求报文已经由主线程读取完毕，工作线程仅是对报文进行解析和生成响应报文
         else
         {
             connectionRAII mysqlcon(&request->mysql, m_connPool);

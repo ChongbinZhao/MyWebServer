@@ -17,6 +17,7 @@ WebServer::WebServer()
     users_timer = new client_data[MAX_FD];
 }
 
+
 WebServer::~WebServer()
 {
     close(m_epollfd);
@@ -27,6 +28,7 @@ WebServer::~WebServer()
     delete[] users_timer;
     delete m_pool;
 }
+
 
 void WebServer::init(int port, string user, string passWord, string databaseName, int log_write, 
                      int opt_linger, int trigmode, int sql_num, int thread_num, int close_log, int actor_model)
@@ -43,6 +45,7 @@ void WebServer::init(int port, string user, string passWord, string databaseName
     m_close_log = close_log;
     m_actormodel = actor_model;
 }
+
 
 void WebServer::trig_mode()
 {
@@ -72,6 +75,7 @@ void WebServer::trig_mode()
     }
 }
 
+
 void WebServer::log_write()
 {
     //m_close_log==1表示不关闭日志功能
@@ -87,6 +91,7 @@ void WebServer::log_write()
     }
 }
 
+
 void WebServer::sql_pool()
 {
     //初始化数据库连接池
@@ -97,11 +102,13 @@ void WebServer::sql_pool()
     users->initmysql_result(m_connPool);
 }
 
+
 void WebServer::thread_pool()
 {
     //线程池
     m_pool = new threadpool<http_conn>(m_actormodel, m_connPool, m_thread_num);
 }
+
 
 //服务器接收http请求（事件监听）
 void WebServer::eventListen()
@@ -109,7 +116,7 @@ void WebServer::eventListen()
     //创建socket基础步骤
     m_listenfd = socket(PF_INET, SOCK_STREAM, 0);
     assert(m_listenfd >= 0);
-
+    
     //优雅关闭连接；struct linger中包含l_onoff和l_linger两个参数
     if (0 == m_OPT_LINGER)
     {   
@@ -130,7 +137,7 @@ void WebServer::eventListen()
     address.sin_family = AF_INET;
     address.sin_addr.s_addr = htonl(INADDR_ANY);
     address.sin_port = htons(m_port);
-
+    
     int flag = 1;
     setsockopt(m_listenfd, SOL_SOCKET, SO_REUSEADDR, &flag, sizeof(flag));
     ret = bind(m_listenfd, (struct sockaddr *)&address, sizeof(address));
@@ -140,7 +147,7 @@ void WebServer::eventListen()
     
     //定时器的内容
     utils.init(TIMESLOT);
-
+    
     //epoll创建内核事件表
     epoll_event events[MAX_EVENT_NUMBER];
     m_epollfd = epoll_create(5);
@@ -149,7 +156,7 @@ void WebServer::eventListen()
     utils.addfd(m_epollfd, m_listenfd, false, m_LISTENTrigmode);
     http_conn::m_epollfd = m_epollfd;
 
-    //创建管道套接字
+    //创建管道套接字（信号处理函数所触发的系统信号将通过管道发送给主循环）
     ret = socketpair(PF_UNIX, SOCK_STREAM, 0, m_pipefd);
     assert(ret != -1);
 
@@ -283,6 +290,7 @@ bool WebServer::dealclinetdata()
     return true;
 }
 
+
 //主进程读取信号值
 bool WebServer::dealwithsignal(bool &timeout, bool &stop_server)
 {
@@ -324,6 +332,7 @@ bool WebServer::dealwithsignal(bool &timeout, bool &stop_server)
     return true;
 }
 
+
 //处理读事件
 void WebServer::dealwithread(int sockfd)
 {   
@@ -331,8 +340,6 @@ void WebServer::dealwithread(int sockfd)
 
     //reactor基于同步I/O
     //Reactor可以理解为「来了事件操作系统通知应用进程，让应用进程来处理」
-    //主线程只监听文件描述符上是否有事件发生，有的话就通知工作线程（通过improv变量）
-    //工作线程负责读写数据以及处理GET和POST等客户请求
     if (1 == m_actormodel)
     {
         if (timer)
@@ -430,6 +437,8 @@ void WebServer::dealwithwrite(int sockfd)
     }
 }
 
+
+//运行
 void WebServer::eventLoop()
 {
     bool timeout = false;

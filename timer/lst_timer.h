@@ -27,7 +27,7 @@
 //定时器
 class util_timer;
 
-//连接资源(含有定时器)
+//定时器类内部的具体信息
 struct client_data
 {
     sockaddr_in address;
@@ -111,13 +111,14 @@ public:
     //定时处理任务，重新定时以不断触发SIGALRM信号
     void timer_handler();
 
+    //将错误信息发给客户端
     void show_error(int connfd, const char *info);
 
 public:
-    static int *u_pipefd;
+    static int *u_pipefd;//管道套接字
     sort_timer_lst m_timer_lst;//定时器列表
-    static int u_epollfd;
-    int m_TIMESLOT;
+    static int u_epollfd;//epoll描述符
+    int m_TIMESLOT;//超时时间间隔：到期时间 - 现在的时间 = 若干个m_TIMESLOT
 };
 
 

@@ -201,11 +201,13 @@ int Utils::setnonblocking(int fd)
 }
 
 //将内核事件表注册读事件，ET模式，选择开启EPOLLONESHOT
+//EPOLLONESHOT使得对应的事件只会被触发一次，保证了一个socket不会同时被多个线程所占用；想重新注册事件则需要调用epoll_ctl重置文件描述符上的事件
 void Utils::addfd(int epollfd, int fd, bool one_shot, int TRIGMode)
-{
+{   
     epoll_event event;
     event.data.fd = fd;
-
+    
+    //ET水平触发
     if (1 == TRIGMode)
         event.events = EPOLLIN | EPOLLET | EPOLLRDHUP;
     else
@@ -235,14 +237,14 @@ void Utils::sig_handler(int sig)
 }
 
 
-//设置信号函数，项目中仅关注SIGPIPE、SIGTERM和SIGALRM两个信号
+//设置信号函数，项目中仅关注SIGPIPE、SIGTERM和SIGALRM三个信号
 void Utils::addsig(int sig, void(handler)(int), bool restart)
-{
+{   
     //创建sigaction结构体变量
     struct sigaction sa;
     memset(&sa, '\0', sizeof(sa));
 
-    //信号处理函数中仅仅发送信号值，不做对应逻辑处理
+    //信号处理函数中仅仅发送信号值，不做相应的逻辑处理
     sa.sa_handler = handler;
 
     //SA_RESTART，使被信号打断的系统调用自动重新发起
