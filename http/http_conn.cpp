@@ -31,7 +31,7 @@ void http_conn::initmysql_result(connection_pool *connPool)
     {
         LOG_ERROR("SELECT error:%s\n", mysql_error(mysql));
     }
-
+    
     //从表中检索完整的结果集
     MYSQL_RES *result = mysql_store_result(mysql);
 

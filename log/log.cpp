@@ -24,16 +24,18 @@ Log::~Log()
 
 //init函数实现日志创建、写入方式的判断；异步需要设置阻塞队列的长度，同步不需要设置
 bool Log::init(const char *file_name, int close_log, int log_buf_size, int split_lines, int max_queue_size)
-{
+{   
     //如果设置了max_queue_size,则设置为异步
     if (max_queue_size >= 1)
     {
         m_is_async = true;
+
+        //m_log_queue用来存放日志信息
         m_log_queue = new block_queue<string>(max_queue_size);
         pthread_t tid;
 
         //flush_log_thread为回调函数,这里表示创建线程异步写日志
-        //flush_log_thread调用Log::get_instance()->async_write_log();
+        //flush_log_thread调用对应的是Log::get_instance()->async_write_log();
         pthread_create(&tid, NULL, flush_log_thread, NULL);
     }
     
@@ -165,6 +167,7 @@ void Log::write_log(int level, const char *format, ...)
 
     m_mutex.unlock();
 
+    //如果是异步写日志，就先把新生成的日志写入阻塞队列m_log_queue里面
     if (m_is_async && !m_log_queue->full())
     {
         m_log_queue->push(log_str);

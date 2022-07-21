@@ -8,6 +8,7 @@
 #include "../lock/locker.h"
 #include "../CGImysql/sql_connection_pool.h"
 
+//项目中的T是http_conn类
 template <typename T>
 class threadpool
 {
@@ -24,15 +25,17 @@ private:
     void run();
 
 private:
-    int m_thread_number;        //线程池中的线程数
+    int m_thread_number;        //线程池中的线程数，这个需要根据硬件来设置
     int m_max_requests;         //请求队列中允许的最大请求数
     pthread_t *m_threads;       //描述线程池的数组，其大小为m_thread_number
     std::list<T *> m_workqueue; //请求队列
     locker m_queuelocker;       //保护请求队列的互斥锁
-    sem m_queuestat;            //是否有任务需要处理
-    connection_pool *m_connPool;  //数据库
+    sem m_queuestat;            //sem是信号量，用来判断是否有任务需要处理
+    connection_pool *m_connPool;//数据库连接池
     int m_actor_model;          //模型切换
 };
+
+
 template <typename T>
 threadpool<T>::threadpool( int actor_model, connection_pool *connPool, int thread_number, int max_requests) : m_actor_model(actor_model),m_thread_number(thread_number), m_max_requests(max_requests), m_threads(NULL),m_connPool(connPool)
 {
@@ -56,11 +59,15 @@ threadpool<T>::threadpool( int actor_model, connection_pool *connPool, int threa
         }
     }
 }
+
+
 template <typename T>
 threadpool<T>::~threadpool()
 {
     delete[] m_threads;
 }
+
+
 template <typename T>
 bool threadpool<T>::append(T *request, int state)
 {
@@ -70,12 +77,14 @@ bool threadpool<T>::append(T *request, int state)
         m_queuelocker.unlock();
         return false;
     }
-    request->m_state = state;
+    request->m_state = state;//请求报文的状态码
     m_workqueue.push_back(request);
     m_queuelocker.unlock();
     m_queuestat.post();
     return true;
 }
+
+
 template <typename T>
 bool threadpool<T>::append_p(T *request)
 {
@@ -90,6 +99,8 @@ bool threadpool<T>::append_p(T *request)
     m_queuestat.post();
     return true;
 }
+
+
 template <typename T>
 void *threadpool<T>::worker(void *arg)
 {
@@ -97,23 +108,37 @@ void *threadpool<T>::worker(void *arg)
     pool->run();
     return pool;
 }
+
+
 template <typename T>
 void threadpool<T>::run()
 {
     while (true)
     {
+        //信号量等待
         m_queuestat.wait();
+
+        //被唤醒后先上锁
         m_queuelocker.lock();
+
+        //如果请求队列为空，解锁后继续等待，直到请求队列有元素
         if (m_workqueue.empty())
         {
             m_queuelocker.unlock();
             continue;
         }
+
+        //从请求队列中获取一个http_conn对象，然后队列出栈，解锁
         T *request = m_workqueue.front();
         m_workqueue.pop_front();
         m_queuelocker.unlock();
+
         if (!request)
             continue;
+
+        //这是reactor模式
+        //当进行了read_once()或write()操作之后，不管读写是否成功，improv都会被置为1
+        //当read_once()或write()任一个操作失败后，timer_flag就会置为1，然后删除对应的定时器（在dealwithwrite和dealwithread里有体现）
         if (1 == m_actor_model)
         {
             if (0 == request->m_state)
@@ -143,6 +168,8 @@ void threadpool<T>::run()
                 }
             }
         }
+
+        //这是proactor模式
         else
         {
             connectionRAII mysqlcon(&request->mysql, m_connPool);
@@ -150,4 +177,6 @@ void threadpool<T>::run()
         }
     }
 }
+
+
 #endif

@@ -13,7 +13,7 @@
 #include "../lock/locker.h"
 using namespace std;
 
-//模板中的T决定阻塞队列的元素类型
+//模板中的T决定阻塞队列的元素类型，项目中用的是string
 template <class T>
 class block_queue
 {

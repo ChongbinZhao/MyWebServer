@@ -74,12 +74,15 @@ void WebServer::trig_mode()
 
 void WebServer::log_write()
 {
+    //m_close_log==1表示不关闭日志功能
     if (0 == m_close_log)
     {
         //初始化日志
         if (1 == m_log_write)
+            //异步写日志
             Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 800);
         else
+            //同步写日志
             Log::get_instance()->init("./ServerLog", m_close_log, 2000, 800000, 0);
     }
 }
@@ -90,7 +93,7 @@ void WebServer::sql_pool()
     m_connPool = connection_pool::GetInstance();
     m_connPool->init("localhost", m_user, m_passWord, m_databaseName, 3306, m_sql_num, m_close_log);
 
-    //初始化数据库读取表
+    //users是一个http类，initmysql_result用来初始化数据库读取表
     users->initmysql_result(m_connPool);
 }
 
