@@ -339,15 +339,17 @@ void WebServer::dealwithread(int sockfd)
     util_timer *timer = users_timer[sockfd].timer;
 
     //reactor基于同步I/O
-    //Reactor可以理解为「来了事件操作系统通知应用进程，让应用进程来处理」
+    //reactor可以理解为「事件来了操作系统通知应用进程，让应用进程来处理」
+    //只负责监听文件描述符上是否有事件发生，有的话立即通知工作线程
+    //读写数据、接受新连接及处理客户请求（比如解析报文和生成响应报文）均在工作线程中完成
     if (1 == m_actormodel)
-    {
+    {   
         if (timer)
         {
             adjust_timer(timer);
         }
-
-        //若监测到读事件，将该事件放入请求队列
+        
+        //若监测到读事件，将该事件放入请求队列;0表示读事件
         m_pool->append(users + sockfd, 0);
 
         while (true)
@@ -483,7 +485,7 @@ void WebServer::eventLoop()
                 if (false == flag)
                     LOG_ERROR("%s", "dealclientdata failure");
             }
-            
+
             //处理客户连接上接收到的数据
             else if (events[i].events & EPOLLIN)
             {

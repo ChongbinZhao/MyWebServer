@@ -666,7 +666,7 @@ bool http_conn::write()
         bytes_have_send += temp;
         bytes_to_send -= temp;
 
-        //第一个iovec头部信息的数据已发送完，发送第二个iovec数据
+        //第一个iovec头部信息的数据已发送完，发送第二个iovec文件数据（文件比较大，可能一次发不完）
         if (bytes_have_send >= m_iv[0].iov_len)
         {
             //不再继续发送头部信息
