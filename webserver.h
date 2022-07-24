@@ -64,6 +64,8 @@ public:
 
     int m_pipefd[2];
     int m_epollfd;
+
+    //这里的users指向的是一个http数组
     http_conn *users;
 
     //数据库相关
@@ -79,14 +81,14 @@ public:
 
     //epoll_event相关
     epoll_event events[MAX_EVENT_NUMBER];
-
+    
     int m_listenfd;
     int m_OPT_LINGER;
     int m_TRIGMode;
     int m_LISTENTrigmode;
     int m_CONNTrigmode;
 
-    //client_data是一个定时器类，里面包含定时器以及socket相关的东西
+    //client_data是一个定时器类，里面包含定时器以及socket相关的东西；users_timer指向的是一个client_data数组
     //Utils类管理所有定时器，里面包含了定时器列表、epoll描述符以及时间阈值等
     client_data *users_timer;
     Utils utils;

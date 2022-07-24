@@ -46,10 +46,10 @@ public:
     //超时时间
     time_t expire;
     
-    //回调函数，用来删除非活动socket上的注册事件并关闭
+    //回调函数，用来关闭非活跃socket并删除events上对应的事件
     void (* cb_func)(client_data *);
 
-    //定时器（含有连接资源）
+    //定时器连接资源，携带着当前定时器对应的socket信息
     client_data *user_data;
 
     //前向和后继定时器

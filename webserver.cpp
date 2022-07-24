@@ -2,7 +2,7 @@
 
 WebServer::WebServer()
 {
-    //http_conn类对象
+    //http_conn连接数组
     users = new http_conn[MAX_FD];
 
     //root文件夹路径
@@ -186,8 +186,7 @@ void WebServer::timer(int connfd, struct sockaddr_in client_address)
     //初始化http连接
     users[connfd].init(connfd, client_address, m_root, m_CONNTrigmode, m_close_log, m_user, m_passWord, m_databaseName);
 
-    //初始化client_data数据
-    //创建定时器，设置回调函数和超时时间，绑定用户数据，将定时器添加到链表中
+    //初始化client_data数据，其中users_timer是一个client_data数组
     users_timer[connfd].address = client_address;
     users_timer[connfd].sockfd = connfd;
 
@@ -206,7 +205,7 @@ void WebServer::timer(int connfd, struct sockaddr_in client_address)
     //设置超时时间
     timer->expire = cur + 3 * TIMESLOT;
 
-    //创建该连接对应的定时器，初始化为前述临时变量
+    //创建该http连接对应的定时器
     users_timer[connfd].timer = timer;
 
     //将该定时器添加到链表中
@@ -231,7 +230,7 @@ void WebServer::deal_timer(util_timer *timer, int sockfd)
 {
     //服务器端关闭连接（删除epoll事件、关闭文件描述符、连接数减1）
     timer->cb_func(&users_timer[sockfd]);
-
+    
     //删除定时器
     if (timer)
     {
@@ -247,10 +246,10 @@ bool WebServer::dealclinetdata()
 {
     struct sockaddr_in client_address;
     socklen_t client_addrlength = sizeof(client_address);
-    //LT模式
+    //LT模式：这个模式下一次最多连接一个客户端
     if (0 == m_LISTENTrigmode)
     {
-        //此连接分配的文件描述符
+        //connfd是客户端的文件描述符
         int connfd = accept(m_listenfd, (struct sockaddr *)&client_address, &client_addrlength);
         if (connfd < 0)
         {
@@ -263,10 +262,11 @@ bool WebServer::dealclinetdata()
             LOG_ERROR("%s", "Internal server busy");
             return false;
         }
+        //添加定时器
         timer(connfd, client_address);
     }
 
-    //ET模式
+    //ET模式：对于连续的客户端连接请求，必须要一次性给处理完，直到出现eagain（使用非阻塞I/O）
     else
     {
         while (1)
@@ -440,7 +440,7 @@ void WebServer::dealwithwrite(int sockfd)
 
 //运行
 void WebServer::eventLoop()
-{
+{   
     bool timeout = false;
     bool stop_server = false;
 
@@ -453,13 +453,13 @@ void WebServer::eventLoop()
             LOG_ERROR("%s", "epoll failure");
             break;
         }
-
+        
         //对所有就绪事件进行处理（epoll_wait函数会把就绪事件排到events前面）
         for (int i = 0; i < number; i++)
         {
             int sockfd = events[i].data.fd;
 
-            //处理新到的客户连接
+            //处理新到的客户连接（m_listenfd是服务端用来监听客户连接的socket）
             if (sockfd == m_listenfd)
             {
                 bool flag = dealclinetdata();
@@ -467,15 +467,15 @@ void WebServer::eventLoop()
                     continue;
             }
 
-            //处理异常事件
+            //处理异常事件：EPOLLRDHUP表示读关闭；EPOLLHUP表示读写都关闭；EPOLLERR文件描述符发生错误
             else if (events[i].events & (EPOLLRDHUP | EPOLLHUP | EPOLLERR))
             {
-                //服务器端关闭连接，移除对应的定时器
+                //移除对应的定时器
                 util_timer *timer = users_timer[sockfd].timer;
                 deal_timer(timer, sockfd);
             }
 
-            //接收定时器信号
+            //通过管道接收定时器信号（读事件）
             else if ((sockfd == m_pipefd[0]) && (events[i].events & EPOLLIN))
             {
                 //主线程仅是接收信号值，不包括处理逻辑
@@ -483,7 +483,7 @@ void WebServer::eventLoop()
                 if (false == flag)
                     LOG_ERROR("%s", "dealclientdata failure");
             }
-
+            
             //处理客户连接上接收到的数据
             else if (events[i].events & EPOLLIN)
             {
