@@ -378,7 +378,7 @@ void WebServer::dealwithread(int sockfd)
 
             //若监测到读事件，将该事件放入请求队列
             m_pool->append_p(users + sockfd);
-
+            
             if (timer)
             {
                 adjust_timer(timer);

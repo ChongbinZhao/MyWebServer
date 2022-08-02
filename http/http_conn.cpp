@@ -541,7 +541,7 @@ http_conn::HTTP_CODE http_conn::do_request()
         {
             if (users.find(name) != users.end() && users[name] == password)
                 strcpy(m_url, "/welcome.html");
-            else0
+            else
                 strcpy(m_url, "/logError.html");
         }
     }
@@ -576,14 +576,6 @@ http_conn::HTTP_CODE http_conn::do_request()
     {
         char *m_url_real = (char *)malloc(sizeof(char) * 200);
         strcpy(m_url_real, "/video.html");
-        strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
-        free(m_url_real);
-    }
-    //如果请求资源为/7，表示跳转博主自定义的粉丝关注界面
-    else if (*(p + 1) == '7')
-    {
-        char *m_url_real = (char *)malloc(sizeof(char) * 200);
-        strcpy(m_url_real, "/fans.html");
         strncpy(m_real_file + len, m_url_real, strlen(m_url_real));
         free(m_url_real);
     }
@@ -665,11 +657,11 @@ bool http_conn::write()
         //更新已发送字节数
         bytes_have_send += temp;
         bytes_to_send -= temp;
-
-        //第一个iovec头部信息的数据已发送完，发送第二个iovec文件数据（文件比较大，可能一次发不完）
+        
+        //第一个iovec头部信息的数据已发送完，正在发送第二个iovec文件数据（文件比较大，可能一次发不完）
         if (bytes_have_send >= m_iv[0].iov_len)
         {
-            //不再继续发送头部信息
+            //不再继续发送响应报文头部信息
             m_iv[0].iov_len = 0;
 
             //bytes_have_send - m_write_idx文件iovec[1]的指针偏移量，就是说可能发送了一部分文件，这已经发送的部分就是偏移量
