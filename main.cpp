@@ -2,39 +2,39 @@
 
 int main(int argc, char *argv[])
 {
-    //ĞèÒªĞŞ¸ÄµÄÊı¾İ¿âĞÅÏ¢,µÇÂ¼Ãû,ÃÜÂë,¿âÃû
+    //éœ€è¦ä¿®æ”¹çš„æ•°æ®åº“ä¿¡æ¯,ç™»å½•å,å¯†ç ,åº“å
     string user = "root";
-    string passwd = "ZCBzcb_2589";
+    string passwd = "xxxxxxxx";
     string databasename = "yourdb";
 
-    //ÃüÁîĞĞ½âÎö£¬ÃüÁîĞĞÊäÈëµÄ²ÎÊı¶¼±£´æÔÚconfigÀïÃæ
+    //å‘½ä»¤è¡Œè§£æï¼Œå‘½ä»¤è¡Œè¾“å…¥çš„å‚æ•°éƒ½ä¿å­˜åœ¨configé‡Œé¢
     Config config;
     config.parse_arg(argc, argv);
 
     WebServer server;
 
-    //³õÊ¼»¯
+    //åˆå§‹åŒ–
     server.init(config.PORT, user, passwd, databasename, config.LOGWrite, 
                 config.OPT_LINGER, config.TRIGMode,  config.sql_num,  config.thread_num, 
                 config.close_log, config.actor_model);
     
 
-    //ÈÕÖ¾
+    //æ—¥å¿—
     server.log_write();
 
-    //Êı¾İ¿â
+    //æ•°æ®åº“
     server.sql_pool();
 
-    //Ïß³Ì³Ø
+    //çº¿ç¨‹æ± 
     server.thread_pool();
 
-    //´¥·¢Ä£Ê½
+    //è§¦å‘æ¨¡å¼
     server.trig_mode();
 
-    //¼àÌı
+    //ç›‘å¬
     server.eventListen();
 
-    //ÔËĞĞ
+    //è¿è¡Œ
     server.eventLoop();
 
     return 0;
