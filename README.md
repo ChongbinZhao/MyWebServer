@@ -1,3 +1,7 @@
+### 提示：该README.md所用到的图片都保存在pic文件夹里，图片没法加载的话可能需要你先挂一下vpn！
+<br></br>
+
+
 #### **原项目地址**
 
 [qinguoyi/TinyWebServer: Linux下C++轻量级Web服务器 (github.com)](https://github.com/qinguoyi/TinyWebServer)
