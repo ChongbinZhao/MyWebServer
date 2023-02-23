@@ -1,7 +1,3 @@
-### 提示：该README.md所用到的图片为root文件夹里的mindTree.svg，看不到图片的话可能需要你先挂一下vpn！
-<br></br>
-
-
 #### **原项目地址**
 
 [qinguoyi/TinyWebServer: Linux下C++轻量级Web服务器 (github.com)](https://github.com/qinguoyi/TinyWebServer)
